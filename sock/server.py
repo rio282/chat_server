@@ -14,7 +14,7 @@ class Server:
             raise Exception("Settings not found.")
 
         # load settings into vars
-        max_clients = settings.get("max_clients")
+        self.max_clients = settings.get("max_clients")
         self.host = settings.get("host")
         self.port = settings.get("port")
         self.buffer_size = settings.get("buffer_size")
@@ -22,7 +22,7 @@ class Server:
 
         # run
         self.client_peer_hashes = {}
-        self._create_socket(max_clients)
+        self._create_socket(self.max_clients)
 
     def _create_socket(self, max_clients) -> None:
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -50,7 +50,7 @@ class Server:
         pass
 
     def serve(self) -> None:
-        print(f"Server listening on {self.host}:{self.port}")
+        print(f"Server listening on {self.host}:{self.port} for {self.max_clients} clients")
 
         while True:
             readable, _, _ = select.select(self.sockets, [], [])
@@ -77,7 +77,7 @@ class Server:
             username = client_socket.recv(self.buffer_size).decode(self.encoding_format)
             if username:
                 self._add_client(client_socket, addr, username)
-                print(f"{username} connected to the server! ")
+                print(f"{username} connected to the server! ({len(self.sockets) - 1}/{self.max_clients})")
             else:
                 print(f"Didn't receive username from: {addr[0]}:{addr[1]}")
                 client_socket.close()
@@ -89,4 +89,4 @@ class Server:
         client = self.lookup_client_by_peername(sock.getpeername())
         sock.close()
         self.sockets.remove(sock)
-        print(f"{client} left the server. :(")
+        print(f"{client} left the server. ({len(self.sockets) - 1}/{self.max_clients})")
