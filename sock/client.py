@@ -12,7 +12,8 @@ class Client:
 
         self.host = host
         self.port = port
-        self.encoding_format = "utf-8"
+        self.encoding_format = settings.get("encoding_format")
+
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def connect(self):
