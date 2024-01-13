@@ -62,8 +62,8 @@ class Server:
                     try:
                         data = sock.recv(self.buffer_size)
                         if data:
-                            client = self.lookup_client_by_peername(sock.getpeername())
-                            print(f"{client}: {data.decode(self.encoding_format)}")
+                            username = self.lookup_client_by_peername(sock.getpeername())
+                            print(f"{username} says: {data.decode(self.encoding_format)}")
                         else:
                             raise ConnectionAbortedError()
                     except (ConnectionResetError, ConnectionAbortedError):
@@ -87,6 +87,6 @@ class Server:
 
     def handle_client_disconnect(self, sock) -> None:
         client = self.lookup_client_by_peername(sock.getpeername())
-        self.sockets.remove(sock)
         sock.close()
-        print(f"Connection closed by {client}")
+        self.sockets.remove(sock)
+        print(f"{client} left the server. :(")

@@ -3,6 +3,7 @@ import sys
 import traceback
 from sock.server import Server
 from sock.client import Client
+from settings import _convert_to_correct_type
 
 
 def clear() -> None:
@@ -18,7 +19,15 @@ def run_server() -> None:
 
 
 def run_client() -> None:
-    client = Client("localhost", 12345)
+    host = input("Enter server host ip: ").strip()
+    if host == "":
+        host = "localhost"
+
+    port = input("Enter server host port: ").strip()
+    if port == "":
+        port = 12345
+
+    client = Client(host, _convert_to_correct_type(port))
     client.connect()
     client.run()
 
@@ -40,13 +49,13 @@ Choice: """
         run_type = input(prompt)
         if run_type == "1":
             run_client()
-        if run_type == "2":
+        elif run_type == "2":
             run_server()
-        if run_type == "3":
+        elif run_type == "3":
             exit_program()
-        else:
-            clear()
-            main()
+
+        clear()
+        main()
     except Exception as exception:
         print("\nError:", exception)
         traceback.print_exc()

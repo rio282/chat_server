@@ -37,7 +37,7 @@ class Client:
 
     def run(self):
         while True:
-            message = input("Enter message (type 'exit' to quit): ")
+            message = input("Enter message (type 'exit' to quit): ").strip()
             if message.lower() == "exit":
                 break
             self.send_message(message)
