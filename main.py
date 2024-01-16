@@ -1,9 +1,9 @@
 import os
 import sys
 import traceback
-from sock.server import Server
+
 from sock.client import Client
-from settings import _convert_to_correct_type
+from sock.server import Server
 
 
 def clear() -> None:
@@ -20,14 +20,11 @@ def run_server() -> None:
 
 def run_client() -> None:
     host = input("Enter server host ip: ").strip()
-    if host == "":
-        host = "localhost"
-
     port = input("Enter server host port: ").strip()
     if port == "":
-        port = 12345
+        port = -1
 
-    client = Client(host, _convert_to_correct_type(port))
+    client = Client(host, port)
     client.connect()
     client.run()
 

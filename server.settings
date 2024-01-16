@@ -2,4 +2,4 @@ host=localhost
 port=55555
 encoding_format=utf-8
 buffer_size=1024
-max_clients=5
+max_clients=2
