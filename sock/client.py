@@ -1,5 +1,6 @@
 import socket
 import sys
+from multiprocessing import Process
 
 from settings import load_settings
 from sock.headers import FILE as file_header
@@ -71,7 +72,16 @@ class Client:
         except Exception as e:
             print(f"Error sending file: {e}")
 
+    def temp(self) -> None:
+        while True:
+            message = self.receive_message()
+            if message:
+                print(f"\n{message}")
+
     def run(self) -> None:
+        receiver_thread = Process(target=self.temp, args=())
+        receiver_thread.start()
+
         while True:
             message = input("Enter message (type 'exit' to quit): ").strip()
             if message.lower() == "exit":
@@ -81,9 +91,7 @@ class Client:
             else:
                 self.send_message(message)
 
-            data = self.receive_message()
-            if data:
-                print(data)
+        receiver_thread.terminate()
         self.close()
 
     def close(self) -> None:
