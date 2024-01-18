@@ -30,7 +30,7 @@ class Client:
             print(f"Connected to {self.host}:{self.port}")
 
             username = ""
-            while username.strip() == "":
+            while username.strip().lower() not in ["", "server"]:
                 username = input("Username: ")
 
             self.send_message(username)
@@ -44,8 +44,11 @@ class Client:
         except Exception as e:
             print(f"Error sending message: {e}")
 
-    def receive_message(self) -> str:
-        return self.client_socket.recv(self.buffer_size).decode(self.encoding_format)
+    def receive_message(self) -> str | None:
+        data = self.client_socket.recv(self.buffer_size)
+        if data:
+            return data.decode(self.encoding_format)
+        return None
 
     def send_file(self, file_path) -> None:
         try:
@@ -77,6 +80,10 @@ class Client:
                 self.send_file(message.split(" ").pop())
             else:
                 self.send_message(message)
+
+            data = self.receive_message()
+            if data:
+                print(data)
         self.close()
 
     def close(self) -> None:

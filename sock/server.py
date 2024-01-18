@@ -1,5 +1,7 @@
+import os.path
 import socket
 import select
+from datetime import datetime
 
 from settings import load_settings
 from sock.utils import get_downloads_path
@@ -59,30 +61,49 @@ class Server:
         client_socket.sendall(message_bytes)
 
     def broadcast_message(self, message) -> None:
+        print(message)
         for client_socket in self.sockets:
             if client_socket != self.server_socket:
                 self.send_message(client_socket, message)
 
     def handle_file_transfer(self, client_socket, file_name, file_size) -> None:
         try:
+            # check if file already exists, so we don't overwrite
+            if os.path.exists(f"{get_downloads_path()}/{file_name}"):
+                fs = file_name.split(".")
+                fe = fs.pop()
+                file_name = f"{''.join(fs)}__{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.{fe}"
+
+            # setup data
             received_data = b""
             remaining_bytes = file_size
 
             # inform client that we're ready for the file data
             self.send_message(client_socket, server_ready_for_file)
 
+            # download
             while remaining_bytes > 0:
                 chunk = client_socket.recv(min(self.buffer_size, remaining_bytes))
                 if not chunk:
                     raise ConnectionAbortedError("Connection closed during file transfer")
 
+                # update data & vars
                 received_data += chunk
                 remaining_bytes -= len(chunk)
+
+                # show results
+                loading_bar = f"[{'=' * int(len(received_data) / file_size * 10)}{' ' * (10 - int(len(received_data) / file_size * 10))}]"
+                print(
+                    f"\rDownloading file: <{file_name}> | {len(received_data)}/{file_size} bytes {loading_bar} {len(received_data) / file_size * 100:.2f}%",
+                    end="",
+                    flush=True
+                )
+            print()
 
             # write to file
             with open(file=f"{get_downloads_path()}/{file_name}", mode="wb") as file:
                 file.write(received_data)
-            print(f"File received successfully.")
+            print(f"File received successfully!")
         except Exception as e:
             print(f"Error during file transfer: {e}")
 
@@ -105,16 +126,18 @@ class Server:
                                 # retrieve file info
                                 file_info = data.split(b" ")[1:][::-1]
 
+                                # get file name
                                 file_name = file_info.pop().decode(self.encoding_format).replace("\\", "/")
                                 if "/" in file_name:
                                     file_name = file_name.split("/").pop()
+
                                 file_size = int(file_info.pop())
 
                                 # handle transfer
                                 self.handle_file_transfer(sock, file_name, file_size)
                             else:
                                 if not data.startswith(b"file_content "):
-                                    print(f"{username} says: {data.decode(self.encoding_format)}")
+                                    self.broadcast_message(f"{username} says: {data.decode(self.encoding_format)}")
                         else:
                             raise ConnectionAbortedError()
                     except (ConnectionResetError, ConnectionAbortedError):
@@ -128,7 +151,7 @@ class Server:
             username = client_socket.recv(self.buffer_size).decode(self.encoding_format)
             if username:
                 self._add_client(client_socket, addr, username)
-                print(f"{username} connected to the server! ({len(self.sockets) - 1}/{self.max_clients})")
+                self.broadcast_message(f"Server: {username} connected to the server! ({len(self.sockets) - 1}/{self.max_clients})")
             else:
                 print(f"Didn't receive username from: {addr[0]}:{addr[1]}")
                 client_socket.close()
