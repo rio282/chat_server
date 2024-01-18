@@ -103,7 +103,8 @@ class Server:
             # write to file
             with open(file=f"{get_downloads_path()}/{file_name}", mode="wb") as file:
                 file.write(received_data)
-            print(f"File received successfully!")
+            print(f"File {file_name} received successfully!")
+            self.send_message(client_socket, "File received successfully!")
         except Exception as e:
             print(f"Error during file transfer: {e}")
 
@@ -151,7 +152,8 @@ class Server:
             username = client_socket.recv(self.buffer_size).decode(self.encoding_format)
             if username:
                 self._add_client(client_socket, addr, username)
-                self.broadcast_message(f"Server: {username} connected to the server! ({len(self.sockets) - 1}/{self.max_clients})")
+                self.broadcast_message(
+                    f"Server: {username} connected to the server! ({len(self.sockets) - 1}/{self.max_clients})")
             else:
                 print(f"Didn't receive username from: {addr[0]}:{addr[1]}")
                 client_socket.close()
