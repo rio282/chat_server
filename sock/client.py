@@ -5,6 +5,7 @@ from multiprocessing import Process
 from settings import load_settings
 from sock.headers import FILE as file_header
 from sock.headers import READY_FOR_FILE as server_ready_for_file
+from sock.headers import USERNAME as set_username
 
 
 class Client:
@@ -31,10 +32,10 @@ class Client:
             print(f"Connected to {self.host}:{self.port}")
 
             username = ""
-            while username.strip().lower() not in ["", "server"]:
+            while username.strip().lower() in ["", "server"]:
                 username = input("Username: ")
 
-            self.send_message(username)
+            self.send_message(f"{set_username} {username}")
         except Exception as e:
             print(f"Connection failed: {e}")
             sys.exit()
@@ -51,47 +52,50 @@ class Client:
             return data.decode(self.encoding_format)
         return None
 
-    def send_file(self, file_path) -> None:
+    def send_file(self, file_path: str) -> None:
         try:
             with open(file=file_path, mode="rb") as file:
                 file_data = file.read()
                 file_size = len(file_data)
+                file_data_sent = 0
 
                 # inform server about incoming file
                 self.send_message(f"{file_header} {file_path} {file_size}")
 
+                # get acknowledgment from server
                 acknowledgment = self.receive_message()
                 if acknowledgment == server_ready_for_file:
                     # send file data in chunks
                     chunk_size = self.buffer_size
-                    for i in range(0, file_size, min(file_size, chunk_size)):
+                    for i in range(0, file_size, min(file_size, chunk_size, file_size - file_data_sent)):
+                        # send chunk
                         chunk = file_data[i:i + chunk_size]
                         self.client_socket.sendall(chunk)
 
-                print(f"File {file_path} sent successfully.")
+                        # inform user
+                        file_data_sent += len(chunk)
+                        loading_bar = f"[{'=' * int(file_data_sent / file_size * 10)}{' ' * (10 - int(file_data_sent / file_size * 10))}]"
+                        print(
+                            f"\rSending file {loading_bar} {file_data_sent / file_size * 100:.2f}%",
+                            end="",
+                            flush=True
+                        )
+                    print()
+                    print(f"File {file_path} sent successfully.")
+                else:
+                    raise ConnectionRefusedError("Server refused file")
         except Exception as e:
             print(f"Error sending file: {e}")
 
-    def temp(self) -> None:
-        while True:
-            message = self.receive_message()
-            if message:
-                print(f"\n{message}")
-
     def run(self) -> None:
-        receiver_thread = Process(target=self.temp, args=())
-        receiver_thread.start()
-
         while True:
             message = input("Enter message (type 'exit' to quit): ").strip()
             if message.lower() == "exit":
                 break
             elif message.lower().startswith("send_file "):
-                self.send_file(message.split(" ").pop())
+                self.send_file(message.replace("send_file ", ""))
             else:
                 self.send_message(message)
-
-        receiver_thread.terminate()
         self.close()
 
     def close(self) -> None:

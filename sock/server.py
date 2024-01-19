@@ -7,6 +7,7 @@ from settings import load_settings
 from sock.utils import get_downloads_path
 from sock.headers import FILE as file_header
 from sock.headers import READY_FOR_FILE as server_ready_for_file
+from sock.headers import USERNAME as set_username
 
 
 def hash_peername(peername) -> hash:
@@ -62,17 +63,18 @@ class Server:
 
     def broadcast_message(self, message) -> None:
         print(message)
-        for client_socket in self.sockets:
-            if client_socket != self.server_socket:
-                self.send_message(client_socket, message)
+        # FIXME
+        # for client_socket in self.sockets:
+        #     if client_socket != self.server_socket:
+        #         self.send_message(client_socket, message)
 
     def handle_file_transfer(self, client_socket, file_name, file_size) -> None:
         try:
             # check if file already exists, so we don't overwrite
             if os.path.exists(f"{get_downloads_path()}/{file_name}"):
-                fs = file_name.split(".")
-                fe = fs.pop()
-                file_name = f"{''.join(fs)}__{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.{fe}"
+                file = file_name.split(".")
+                file_extension = file.pop()
+                file_name = f"{''.join(file)}__{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.{file_extension}"
 
             # setup data
             received_data = b""
@@ -122,7 +124,7 @@ class Server:
                         username = self.lookup_client_by_peername(sock.getpeername())
                         if data:
                             if data.startswith(file_header.encode(self.encoding_format)):
-                                print("Received file header!")
+                                print(f"Received file header from {username}!")
 
                                 # retrieve file info
                                 file_info = data.split(b" ")[1:][::-1]
@@ -137,8 +139,7 @@ class Server:
                                 # handle transfer
                                 self.handle_file_transfer(sock, file_name, file_size)
                             else:
-                                if not data.startswith(b"file_content "):
-                                    self.broadcast_message(f"{username} says: {data.decode(self.encoding_format)}")
+                                self.broadcast_message(f"{username} says: {data.decode(self.encoding_format)}")
                         else:
                             raise ConnectionAbortedError()
                     except (ConnectionResetError, ConnectionAbortedError):
@@ -150,10 +151,12 @@ class Server:
     def handle_new_client(self, client_socket, addr) -> None:
         try:
             username = client_socket.recv(self.buffer_size).decode(self.encoding_format)
-            if username:
+            if set_username in username:
+                username = username.replace(set_username, "").lstrip()
                 self._add_client(client_socket, addr, username)
-                self.broadcast_message(
-                    f"Server: {username} connected to the server! ({len(self.sockets) - 1}/{self.max_clients})")
+                # self.broadcast_message(
+                #     f"Server: {username} connected to the server! ({len(self.sockets) - 1}/{self.max_clients})"
+                # )
             else:
                 print(f"Didn't receive username from: {addr[0]}:{addr[1]}")
                 client_socket.close()
