@@ -27,7 +27,11 @@ class Server:
         self.buffer_size = settings.get("buffer_size")
         self.encoding_format = settings.get("encoding_format")
 
+        # other
+        self.server_output = []
+
         # run
+        self.running = False
         self.client_peer_hashes = {}
         self._create_socket(self.max_clients)
 
@@ -67,6 +71,13 @@ class Server:
         # for client_socket in self.sockets:
         #     if client_socket != self.server_socket:
         #         self.send_message(client_socket, message)
+
+    def get_next_server_output(self) -> str | None:
+        if self.server_output:
+            # return first & remove
+            return self.server_output.pop(0)
+        else:
+            return None
 
     def handle_file_transfer(self, client_socket, file_name, file_size) -> None:
         try:
@@ -111,14 +122,25 @@ class Server:
             print(f"Error during file transfer: {e}")
 
     def serve(self) -> None:
+        self.running = True
         print(f"Server listening on {self.host}:{self.port} for {self.max_clients} clients")
-        while True:
+
+        while self.running:
             readable, _, _ = select.select(self.sockets, [], [])
             for sock in readable:
                 if sock == self.server_socket:
-                    client_socket, addr = self.server_socket.accept()
-                    self.handle_new_client(client_socket, addr)
+                    try:
+                        client_socket, addr = sock.accept()
+                        self.handle_new_client(client_socket, addr)
+                    except OSError as e:
+                        # WinError 10038: An operation was attempted on something that is not a socket
+                        if e.errno == 10038:
+                            break
+                        else:
+                            # handle other OSError cases
+                            raise
                 else:
+                    # not server socket
                     try:
                         data = sock.recv(self.buffer_size)
                         username = self.lookup_client_by_peername(sock.getpeername())
@@ -139,7 +161,11 @@ class Server:
                                 # handle transfer
                                 self.handle_file_transfer(sock, file_name, file_size)
                             else:
-                                self.broadcast_message(f"{username} says: {data.decode(self.encoding_format)}")
+                                message = data.decode(self.encoding_format)
+                                text = f"{username} says: {message}"
+
+                                self.server_output.append(text)
+                                self.broadcast_message(text)
                         else:
                             raise ConnectionAbortedError()
                     except (ConnectionResetError, ConnectionAbortedError):
@@ -148,15 +174,37 @@ class Server:
                         print(f"Error: {e}")
                         self.handle_client_disconnect(sock)
 
+    def stop(self) -> bool:
+        if not self.running:
+            return False
+
+        # stop server from running
+        self.running = False
+
+        self.sockets.remove(self.server_socket)
+        self.server_socket.close()
+
+        # close client sockets
+        for client_socket in self.sockets:
+            self.send_message(client_socket, "Server closed.")
+            self.handle_client_disconnect(client_socket)
+
+        if len(self.sockets) != 0:
+            return False
+
+        # success
+        print("Server closed.")
+        return True
+
     def handle_new_client(self, client_socket, addr) -> None:
         try:
             username = client_socket.recv(self.buffer_size).decode(self.encoding_format)
             if set_username in username:
                 username = username.replace(set_username, "").lstrip()
                 self._add_client(client_socket, addr, username)
-                # self.broadcast_message(
-                #     f"Server: {username} connected to the server! ({len(self.sockets) - 1}/{self.max_clients})"
-                # )
+                self.broadcast_message(
+                    f"Server: {username} connected to the server! ({len(self.sockets) - 1}/{self.max_clients})"
+                )
             else:
                 print(f"Didn't receive username from: {addr[0]}:{addr[1]}")
                 client_socket.close()
@@ -164,8 +212,11 @@ class Server:
             print(f"Error handling new client: {e}")
             client_socket.close()
 
-    def handle_client_disconnect(self, sock) -> None:
-        client = self.lookup_client_by_peername(sock.getpeername())
-        sock.close()
-        self.sockets.remove(sock)
-        print(f"{client} left the server. ({len(self.sockets) - 1}/{self.max_clients})")
+    def handle_client_disconnect(self, client_socket) -> None:
+        client = self.lookup_client_by_peername(client_socket.getpeername())
+        self.sockets.remove(client_socket)
+        client_socket.close()
+        if self.running:
+            print(f"{client} left the server. ({len(self.sockets) - 1}/{self.max_clients})")
+        else:
+            print(f"Kicked {client} ({len(self.sockets)}/{self.max_clients}).")

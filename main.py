@@ -1,9 +1,10 @@
 import os
 import sys
 import traceback
+import tkinter as tk
 
 from sock.client import Client
-from sock.server import Server
+from gui.server import ServerGUI
 
 
 def clear() -> None:
@@ -14,8 +15,9 @@ def clear() -> None:
 
 
 def run_server() -> None:
-    server = Server()
-    server.serve()
+    root = tk.Tk()
+    server = ServerGUI(root)
+    server.start_server()
 
 
 def run_client() -> None:
