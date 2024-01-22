@@ -27,7 +27,7 @@ def run_client() -> None:
         port = -1
 
     root = tk.Tk()
-    client = ClientGUI(root, host, port)
+    client = ClientGUI(root, host, int(port))
     client.start_client()
 
 
