@@ -3,8 +3,8 @@ import sys
 import traceback
 import tkinter as tk
 
-from sock.client import Client
 from gui.server import ServerGUI
+from gui.client import ClientGUI
 
 
 def clear() -> None:
@@ -26,9 +26,9 @@ def run_client() -> None:
     if port == "":
         port = -1
 
-    client = Client(host, port)
-    client.connect()
-    client.run()
+    root = tk.Tk()
+    client = ClientGUI(root, host, port)
+    client.start_client()
 
 
 def exit_program() -> None:

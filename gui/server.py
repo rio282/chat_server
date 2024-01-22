@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import scrolledtext
 from threading import Thread
 
+from gui.utils import center_master
 from sock.server import Server
 
 
@@ -29,22 +30,7 @@ class ServerGUI:
         self.stop_button = tk.Button(self.master, text="Stop Server", command=self.stop_server, state=tk.DISABLED)
         self.stop_button.pack(pady=10)
 
-        # center window
-        self.master.resizable(False, False)  # This code helps to disable windows from resizing
-
-        window_height = 600
-        window_width = 800
-        screen_width = self.master.winfo_screenwidth()
-        screen_height = self.master.winfo_screenheight()
-
-        x_coordinate = int((screen_width / 2) - (window_width / 2))
-        y_coordinate = int((screen_height / 2) - (window_height / 2))
-        self.master.geometry(f"{window_width}x{window_height}+{x_coordinate}+{y_coordinate}")
-
-        # set topmost
-        self.master.lift()
-        self.master.call("wm", "attributes", ".", "-topmost", True)
-        self.master.after_idle(self.master.call, "wm", "attributes", ".", "-topmost", False)
+        center_master(self.master)
 
     def monitor_server_output(self):
         while self.server_thread.is_alive():
