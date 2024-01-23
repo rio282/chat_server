@@ -11,7 +11,11 @@ class App(tk.Tk):
         self.switch_frame_to(MenuGUI)
 
     def switch_frame_to(self, frame_class, **frame_class_constructor_params):
-        new_frame = frame_class(self, **frame_class_constructor_params)
+        try:
+            new_frame = frame_class(self, **frame_class_constructor_params)
+        except:
+            return
+
         if self._frame:
             self._frame.destroy()
 

@@ -25,11 +25,15 @@ class Client:
         try:
             self.client_socket.connect((self.host, self.port))
             print(f"Connected to {self.host}:{self.port}")
+        except Exception as e:
+            # error connecting to server
+            raise ConnectionAbortedError("Server is closed.")
 
+        try:
             self.send_message(f"{set_username} {self.username}")
         except Exception as e:
-            print(f"Connection failed: {e}")
-            sys.exit()
+            # error setting username
+            raise ConnectionError("Failed to set username.")
 
     def send_message(self, message) -> None:
         self.client_socket.sendall(message.encode(self.encoding_format))

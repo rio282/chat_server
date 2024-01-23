@@ -1,12 +1,28 @@
 import os
+import random
+from time import sleep
 import tkinter as tk
-from tkinter import scrolledtext, filedialog
-from tkinter.messagebox import showinfo
+from tkinter import scrolledtext, filedialog, ttk
+from tkinter.messagebox import showinfo, showerror
 from threading import Thread
 
 from gui.utils import is_valid_ipv4, is_valid_port
 from settings import load_settings
 from sock.client import Client
+
+
+class TkWait:
+    def __init__(self, master, milliseconds):
+        self.duration = milliseconds
+        self.master = master
+
+    def __enter__(self):
+        self.resume = tk.BooleanVar(value=False)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.master.after(self.duration, self.resume.set, True)
+        self.master.wait_variable(self.resume)
 
 
 class ClientGUI(tk.Frame):
@@ -27,12 +43,14 @@ class ClientGUI(tk.Frame):
         self.choose_files_button = None
         self.send_file_button = None
         self.disconnect_button = None
+        self.create_gui()
 
         # client instance
         self.client = None
-        self.create_gui()
-
-        self.start_client()
+        try:
+            self.start_client()
+        except Exception:
+            raise
 
     def create_gui(self) -> None:
         # create gui components
@@ -53,18 +71,18 @@ class ClientGUI(tk.Frame):
         self.disconnect_button.pack(pady=10)
 
     def start_client(self) -> None:
-        self.client = Client(self.username, self.host, self.port)
-        self.client.connect()
+        try:
+            self.client = Client(self.username, self.host, self.port)
+            self.client.connect()
+        except Exception as error_message:
+            showerror("Server Information", str(error_message))
+            self.disconnect_and_close()
+            raise
 
     def send_message(self, event=None) -> None:
         message = self.message_entry.get().strip()
         self.message_entry.delete(0, tk.END)
-
-        try:
-            self.client.send_message(message)
-        except ConnectionAbortedError:
-            showinfo("Server Information", "Server closed.")
-            self.disconnect_and_close()
+        self.client.send_message(message)
 
     def send_file(self) -> None:
         if not self.chosen_file:
@@ -111,7 +129,11 @@ class ClientConfigureGUI(tk.Frame):
         self.connect_button = tk.Button(self, text="Connect", command=self.connect, pady=10)
         self.connect_button.pack()
 
+        self.progressbar = ttk.Progressbar(self, mode="indeterminate")
+
     def connect(self, event=None) -> None:
+        self.connect_button["state"] = tk.DISABLED
+
         host = self.host_entry.get()
         if not is_valid_ipv4(host):
             showinfo("Error", "Invalid host.")
@@ -130,4 +152,11 @@ class ClientConfigureGUI(tk.Frame):
             )
             return
 
+        # everything is ok
+        self.progressbar.pack(padx=20, pady=20)
+        with TkWait(self, random.randint(50, 500)) as wait:
+            # fake loading lol
+            self.progressbar.start(10)
+
+        self.progressbar.stop()
         self.master.switch_frame_to(ClientGUI, username=username, host=host, port=int(port))
