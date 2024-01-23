@@ -8,16 +8,12 @@ from sock.headers import USERNAME as set_username
 
 
 class Client:
-    def __init__(self, host: str, port: int):
+    def __init__(self, username: str, host: str, port: int):
         settings = load_settings()
         if settings == {}:
             raise Exception("Settings not found.")
 
-        if not host or host == "":
-            host = settings.get("host")
-        if port == -1:
-            port = settings.get("port")
-
+        self.username = username
         self.host = host
         self.port = port
         self.encoding_format = settings.get("encoding_format")
@@ -30,11 +26,7 @@ class Client:
             self.client_socket.connect((self.host, self.port))
             print(f"Connected to {self.host}:{self.port}")
 
-            username = ""
-            while username.strip().lower() in ["", "server"]:
-                username = input("Username: ")
-
-            self.send_message(f"{set_username} {username}")
+            self.send_message(f"{set_username} {self.username}")
         except Exception as e:
             print(f"Connection failed: {e}")
             sys.exit()
