@@ -63,14 +63,14 @@ class ClientGUI(tk.Frame):
 
     def create_gui(self) -> None:
         # create gui components
-        self.message_entry = tk.Entry(self, width=75)
+        self.message_entry = ttk.Entry(self, width=75)
         self.message_entry.bind("<Return>", self.send_message)
-        self.send_button = tk.Button(self, text="Send Message", command=self.send_message)
+        self.send_button = ttk.Button(self, text="Send Message", command=self.send_message)
 
-        self.choose_files_button = tk.Button(self, text="Choose file...", command=self.choose_file_by_browsing)
-        self.send_file_button = tk.Button(self, text="Send File", command=self.send_file)
+        self.choose_files_button = ttk.Button(self, text="Choose file...", command=self.choose_file_by_browsing)
+        self.send_file_button = ttk.Button(self, text="Send File", command=self.send_file)
 
-        self.disconnect_button = tk.Button(self, text="Disconnect", command=self.disconnect_and_close)
+        self.disconnect_button = ttk.Button(self, text="Disconnect", command=self.disconnect_and_close)
 
         # padding
         self.message_entry.pack(pady=10)
@@ -128,26 +128,26 @@ class ClientConfigureGUI(tk.Frame):
         self.rowconfigure(0, weight=1)
 
         # create components
-        self.title_label = tk.Label(center_frame, text="Connect to a Server")
+        self.title_label = ttk.Label(center_frame, text="Connect to a Server")
         self.title_label.grid(row=0, column=0, pady=5, columnspan=2)
 
         form_frame = tk.Frame(center_frame)
 
-        tk.Label(form_frame, text="Host:").grid(row=1, column=0, pady=5, sticky=tk.E)
-        self.host_entry = tk.Entry(form_frame)
+        ttk.Label(form_frame, text="Host:").grid(row=1, column=0, pady=5, sticky=tk.E)
+        self.host_entry = ttk.Entry(form_frame)
         self.host_entry.insert(0, settings.get("host"))
         self.host_entry.grid(row=1, column=1, padx=1, pady=5)
 
-        tk.Label(form_frame, text="Port:").grid(row=2, column=0, pady=5, sticky=tk.E)
-        self.port_entry = tk.Entry(form_frame)
+        ttk.Label(form_frame, text="Port:").grid(row=2, column=0, pady=5, sticky=tk.E)
+        self.port_entry = ttk.Entry(form_frame)
         self.port_entry.insert(0, settings.get("port"))
         self.port_entry.grid(row=2, column=1, padx=1, pady=5)
 
-        tk.Label(form_frame, text="Username:").grid(row=3, column=0, pady=5, sticky=tk.E)
-        self.username_entry = tk.Entry(form_frame)
+        ttk.Label(form_frame, text="Username:").grid(row=3, column=0, pady=5, sticky=tk.E)
+        self.username_entry = ttk.Entry(form_frame)
         self.username_entry.grid(row=3, column=1, padx=1, pady=5)
 
-        self.connect_button = tk.Button(form_frame, text="Connect", command=self.connect, cursor="heart")
+        self.connect_button = ttk.Button(form_frame, text="Connect", command=self.connect, cursor="heart")
         self.connect_button.grid(row=4, column=0, columnspan=2, pady=5)
 
         form_frame.grid(row=1, column=0)

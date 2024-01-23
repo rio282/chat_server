@@ -1,5 +1,6 @@
 import sys
 import tkinter as tk
+from tkinter import ttk
 
 from gui.frames.client import ClientConfigureGUI
 from gui.frames.server import ServerConfigureGUI
@@ -11,24 +12,24 @@ class MenuGUI(tk.Frame):
         center_frame = tk.Frame(self)
         center_frame.grid(row=0, column=0)
 
-        self.welcome_label = tk.Label(
+        self.welcome_label = ttk.Label(
             center_frame,
             text="Welcome!",
             font=("Helvetica", 24)
         )
-        self.client_button = tk.Button(
+        self.client_button = ttk.Button(
             center_frame,
             text="Client",
             command=lambda: master.switch_frame_to(ClientConfigureGUI),
             width=10
         )
-        self.server_button = tk.Button(
+        self.server_button = ttk.Button(
             center_frame,
             text="Server",
             command=lambda: master.switch_frame_to(ServerConfigureGUI),
             width=10
         )
-        self.exit_button = tk.Button(
+        self.exit_button = ttk.Button(
             center_frame,
             text="Exit",
             command=sys.exit,

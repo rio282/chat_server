@@ -28,7 +28,7 @@ class Server:
         self.encoding_format = settings.get("encoding_format")
 
         # other
-        self.server_output = []
+        self.output = []
 
         # run
         self.running = False
@@ -48,7 +48,7 @@ class Server:
         hashed_peername = hash_peername(addr)
         self.client_peer_hashes[hashed_peername] = username
 
-        print(f"New connection from: {addr[0]}:{addr[1]}")
+        self.output.append(f"New connection from: {addr[0]}:{addr[1]}")
         self.sockets.append(client_socket)
 
     def lookup_client_by_peername(self, peername) -> str:
@@ -62,20 +62,21 @@ class Server:
         self.client_peer_hashes[hashed_peername] = username
 
     def send_message(self, client_socket, message) -> None:
+        self.output.append(message)
         message_bytes = message.encode(self.encoding_format)
         client_socket.sendall(message_bytes)
 
     def broadcast_message(self, message) -> None:
-        print(message)
+        self.output.append(message)
         # FIXME
         # for client_socket in self.sockets:
         #     if client_socket != self.server_socket:
         #         self.send_message(client_socket, message)
 
     def get_next_server_output(self) -> str | None:
-        if self.server_output:
+        if self.output:
             # return first & remove
-            return self.server_output.pop(0)
+            return self.output.pop(0)
         else:
             return None
 
@@ -116,14 +117,14 @@ class Server:
             # write to file
             with open(file=f"{get_downloads_path()}/{file_name}", mode="wb") as file:
                 file.write(received_data)
-            print(f"File {file_name} received successfully!")
+            self.output.append(f"File {file_name} received successfully!")
             self.send_message(client_socket, "File received successfully!")
         except Exception as e:
             print(f"Error during file transfer: {e}")
 
     def serve(self) -> None:
         self.running = True
-        print(f"Server listening on {self.host}:{self.port} for {self.max_clients} clients")
+        self.output.append(f"Server listening on {self.host}:{self.port} for {self.max_clients} clients")
 
         while self.running:
             readable, _, _ = select.select(self.sockets, [], [])
@@ -146,7 +147,7 @@ class Server:
                         username = self.lookup_client_by_peername(sock.getpeername())
                         if data:
                             if data.startswith(file_header.encode(self.encoding_format)):
-                                print(f"Received file header from {username}!")
+                                self.output.append(f"Received file header from {username}!")
 
                                 # retrieve file info
                                 file_info = data.split(b" ")[1:][::-1]
@@ -163,14 +164,13 @@ class Server:
                             else:
                                 message = data.decode(self.encoding_format)
                                 text = f"{username} says: {message}"
-
-                                self.server_output.append(text)
                                 self.broadcast_message(text)
                         else:
                             raise ConnectionAbortedError()
                     except (ConnectionResetError, ConnectionAbortedError):
                         self.handle_client_disconnect(sock)
                     except Exception as e:
+                        self.output.append(f"Error: {e}")
                         print(f"Error: {e}")
                         self.handle_client_disconnect(sock)
 
@@ -193,7 +193,7 @@ class Server:
             return False
 
         # success
-        print("Server closed.")
+        print()  # prevents blocking thread somehow
         return True
 
     def handle_new_client(self, client_socket, addr) -> None:
@@ -206,9 +206,10 @@ class Server:
                     f"Server: {username} connected to the server! ({len(self.sockets) - 1}/{self.max_clients})"
                 )
             else:
-                print(f"Didn't receive username from: {addr[0]}:{addr[1]}")
+                self.output.append(f"Didn't receive username from: {addr[0]}:{addr[1]}")
                 client_socket.close()
         except Exception as e:
+            self.output.append(f"Error handling new client: {e}")
             print(f"Error handling new client: {e}")
             client_socket.close()
 
@@ -217,6 +218,6 @@ class Server:
         self.sockets.remove(client_socket)
         client_socket.close()
         if self.running:
-            print(f"{client} left the server. ({len(self.sockets) - 1}/{self.max_clients})")
+            self.output.append(f"{client} left the server. ({len(self.sockets) - 1}/{self.max_clients})")
         else:
-            print(f"Kicked {client} ({len(self.sockets)}/{self.max_clients}).")
+            self.output.append(f"Kicked {client}. ({len(self.sockets)}/{self.max_clients})")

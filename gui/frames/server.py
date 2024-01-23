@@ -1,6 +1,8 @@
 import tkinter as tk
+from tkinter import ttk
 from tkinter import scrolledtext
 from threading import Thread
+from tkinter.messagebox import showerror
 
 from sock.server import Server
 
@@ -21,13 +23,19 @@ class ServerGUI(tk.Frame):
 
     def create_gui(self) -> None:
         # create gui
-        self.text_area = scrolledtext.ScrolledText(self.master, wrap=tk.WORD, width=40, height=10)
+        self.text_area = scrolledtext.ScrolledText(
+            self.master,
+            wrap=tk.WORD,
+            width=90,
+            height=20,
+            state=tk.DISABLED,
+        )
         self.text_area.pack(pady=4)
 
-        self.start_button = tk.Button(self.master, text="Start Server", command=self.starter, state=tk.NORMAL)
+        self.start_button = ttk.Button(self.master, text="Start Server", command=self.starter, state=tk.NORMAL)
         self.start_button.pack(pady=4)
 
-        self.stop_button = tk.Button(self.master, text="Stop Server", command=self.stop_server, state=tk.DISABLED)
+        self.stop_button = ttk.Button(self.master, text="Stop Server", command=self.stop_server, state=tk.DISABLED)
         self.stop_button.pack(pady=4)
 
     def monitor_server_output(self):
@@ -37,8 +45,10 @@ class ServerGUI(tk.Frame):
                 self.update_text_area(output_text)
 
     def update_text_area(self, message):
+        self.text_area["state"] = tk.NORMAL
         self.text_area.insert(tk.END, f"{message}\n")
         self.text_area.see(tk.END)
+        self.text_area["state"] = tk.DISABLED
 
     def starter(self):
         self.start_button["state"] = tk.DISABLED
@@ -67,8 +77,9 @@ class ServerGUI(tk.Frame):
             self.monitor_thread.join()
             self.start_button["state"] = tk.NORMAL
             self.stop_button["state"] = tk.DISABLED
+            self.update_text_area("Server closed.")
         else:
-            print("Couldn't stop server.")
+            showerror("Couldn't stop server.")
 
 
 class ServerConfigureGUI(tk.Frame):

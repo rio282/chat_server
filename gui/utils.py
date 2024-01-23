@@ -10,7 +10,7 @@ class LoadingWindow(tk.Toplevel):
         self.resizable = False
         self.geometry("300x100")
 
-        self.message_label = tk.Label(self, text=message)
+        self.message_label = ttk.Label(self, text=message)
         self.message_label.pack(pady=10)
 
         self.progressbar = ttk.Progressbar(self, mode="indeterminate")
