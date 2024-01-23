@@ -1,4 +1,3 @@
-import re
 import tkinter as tk
 from typing import Tuple
 
@@ -22,20 +21,3 @@ def center_master(master: tk.Tk, window_dimensions: Tuple[int, int] = (800, 600)
     master.lift()
     master.call("wm", "attributes", ".", "-topmost", True)
     master.after_idle(master.call, "wm", "attributes", ".", "-topmost", False)
-
-
-def is_valid_ipv4(ip: str):
-    if ip == "localhost":
-        return True
-
-    ipv4_pattern = re.compile(r"^(\d{1,3}\.){3}\d{1,3}$")
-    return bool(ipv4_pattern.match(ip))
-
-
-def is_valid_port(port: int | str):
-    try:
-        port = int(port)
-    except ValueError:
-        return False
-
-    return 0 < port < 65535

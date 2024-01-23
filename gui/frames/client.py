@@ -1,12 +1,11 @@
 import os
 import random
-from time import sleep
 import tkinter as tk
 from tkinter import scrolledtext, filedialog, ttk
 from tkinter.messagebox import showinfo, showerror
 from threading import Thread
 
-from gui.utils import is_valid_ipv4, is_valid_port
+from sock.utils import is_valid_ipv4, is_valid_port
 from settings import load_settings
 from sock.client import Client
 
@@ -132,8 +131,6 @@ class ClientConfigureGUI(tk.Frame):
         self.progressbar = ttk.Progressbar(self, mode="indeterminate")
 
     def connect(self, event=None) -> None:
-        self.connect_button["state"] = tk.DISABLED
-
         host = self.host_entry.get()
         if not is_valid_ipv4(host):
             showinfo("Error", "Invalid host.")
@@ -153,10 +150,13 @@ class ClientConfigureGUI(tk.Frame):
             return
 
         # everything is ok
+        self.connect_button["state"] = tk.DISABLED
         self.progressbar.pack(padx=20, pady=20)
-        with TkWait(self, random.randint(50, 500)) as wait:
-            # fake loading lol
-            self.progressbar.start(10)
 
-        self.progressbar.stop()
+        # fake loading lol
+        with TkWait(self, random.randint(50, 500)) as wait:
+            self.progressbar.start(10)
+        self.progressbar.pack_forget()
+
+        # switch frame (freezes app because of client connect lol)
         self.master.switch_frame_to(ClientGUI, username=username, host=host, port=int(port))

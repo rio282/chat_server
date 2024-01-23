@@ -20,7 +20,7 @@ class App(tk.Tk):
             self._frame.destroy()
 
         self._frame = new_frame
-        self._frame.pack()
+        self._frame.pack(expand=True, fill=tk.BOTH)
 
         self.title(frame_class.__name__)
         center_master(self)

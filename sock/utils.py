@@ -1,4 +1,5 @@
 import os
+import re
 
 
 def get_downloads_path():
@@ -15,3 +16,20 @@ def get_downloads_path():
         raise NotImplementedError("Unsupported operating system")
 
     return downloads_path
+
+
+def is_valid_ipv4(ip: str):
+    if ip == "localhost":
+        return True
+
+    ipv4_pattern = re.compile(r"^(\d{1,3}\.){3}\d{1,3}$")
+    return bool(ipv4_pattern.match(ip))
+
+
+def is_valid_port(port: int | str):
+    try:
+        port = int(port)
+    except ValueError:
+        return False
+
+    return 0 < port < 65535
