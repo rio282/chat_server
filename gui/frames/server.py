@@ -22,13 +22,13 @@ class ServerGUI(tk.Frame):
     def create_gui(self) -> None:
         # create gui
         self.text_area = scrolledtext.ScrolledText(self.master, wrap=tk.WORD, width=40, height=10)
-        self.text_area.pack(padx=10, pady=10)
+        self.text_area.pack(pady=4)
 
-        self.start_button = tk.Button(self.master, text="Start Server", command=self.start_server)
-        self.start_button.pack(pady=10)
+        self.start_button = tk.Button(self.master, text="Start Server", command=self.starter, state=tk.NORMAL)
+        self.start_button.pack(pady=4)
 
         self.stop_button = tk.Button(self.master, text="Stop Server", command=self.stop_server, state=tk.DISABLED)
-        self.stop_button.pack(pady=10)
+        self.stop_button.pack(pady=4)
 
     def monitor_server_output(self):
         while self.server_thread.is_alive():
@@ -40,7 +40,10 @@ class ServerGUI(tk.Frame):
         self.text_area.insert(tk.END, f"{message}\n")
         self.text_area.see(tk.END)
 
-    def start_server(self):
+    def starter(self):
+        self.start_button["state"] = tk.DISABLED
+        self.stop_button["state"] = tk.NORMAL
+
         # create server instance
         self.server = Server()
 
@@ -54,11 +57,10 @@ class ServerGUI(tk.Frame):
         self.monitor_thread.daemon = True
         self.monitor_thread.start()
 
-        # prepare UI again
-        self.start_button["state"] = tk.DISABLED
-        self.stop_button["state"] = tk.NORMAL
-
     def stop_server(self):
+        if not self.server:
+            return
+
         is_server_stopped = self.server.stop()
         if is_server_stopped:
             self.server_thread.join()

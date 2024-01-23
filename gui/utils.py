@@ -1,5 +1,30 @@
 import tkinter as tk
+from tkinter import ttk
 from typing import Tuple
+
+
+class LoadingWindow(tk.Toplevel):
+    def __init__(self, master, message):
+        tk.Toplevel.__init__(self, master)
+        self.title("Loading...")
+        self.resizable = False
+        self.geometry("300x100")
+
+        self.message_label = tk.Label(self, text=message)
+        self.message_label.pack(pady=10)
+
+        self.progressbar = ttk.Progressbar(self, mode="indeterminate")
+        self.progressbar.pack(pady=10)
+
+        self.start()
+
+    def start(self):
+        self.progressbar.start(10)
+
+    def stop(self):
+        self.message_label["text"] = "Done."
+        self.progressbar.stop()
+        self.progressbar.pack_forget()
 
 
 def center_master(master: tk.Tk, window_dimensions: Tuple[int, int] = (800, 600)) -> None:

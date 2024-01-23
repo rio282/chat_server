@@ -5,6 +5,7 @@ from tkinter import scrolledtext, filedialog, ttk
 from tkinter.messagebox import showinfo, showerror
 from threading import Thread
 
+from gui.utils import LoadingWindow
 from sock.utils import is_valid_ipv4, is_valid_port
 from settings import load_settings
 from sock.client import Client
@@ -47,8 +48,17 @@ class ClientGUI(tk.Frame):
         # client instance
         self.client = None
         try:
-            self.start_client()
+            self.starter()
         except Exception:
+            raise
+
+    def starter(self) -> None:
+        try:
+            self.client = Client(self.username, self.host, self.port)
+            self.client.connect()
+        except Exception as error_message:
+            showerror("Server Information", str(error_message))
+            self.disconnect_and_close()
             raise
 
     def create_gui(self) -> None:
@@ -69,19 +79,15 @@ class ClientGUI(tk.Frame):
         self.send_file_button.pack(pady=10)
         self.disconnect_button.pack(pady=10)
 
-    def start_client(self) -> None:
-        try:
-            self.client = Client(self.username, self.host, self.port)
-            self.client.connect()
-        except Exception as error_message:
-            showerror("Server Information", str(error_message))
-            self.disconnect_and_close()
-            raise
-
     def send_message(self, event=None) -> None:
         message = self.message_entry.get().strip()
         self.message_entry.delete(0, tk.END)
-        self.client.send_message(message)
+
+        try:
+            self.client.send_message(message)
+        except ConnectionAbortedError:
+            showinfo("Server Information", "Server closed.")
+            self.disconnect_and_close()
 
     def send_file(self) -> None:
         if not self.chosen_file:
@@ -110,25 +116,41 @@ class ClientConfigureGUI(tk.Frame):
     def __init__(self, master):
         tk.Frame.__init__(self, master)
         self.master = master
+
+        # settings and stuff
+        settings = load_settings()
         self.reserved_usernames = ["", "server"]
 
-        settings = load_settings()
+        # create frames
+        center_frame = tk.Frame(self)
+        center_frame.grid(row=0, column=0)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
 
-        self.host_entry = tk.Entry(self)
+        # create components
+        self.title_label = tk.Label(center_frame, text="Connect to a Server")
+        self.title_label.grid(row=0, column=0, pady=5, columnspan=2)
+
+        form_frame = tk.Frame(center_frame)
+
+        tk.Label(form_frame, text="Host:").grid(row=1, column=0, pady=5, sticky=tk.E)
+        self.host_entry = tk.Entry(form_frame)
         self.host_entry.insert(0, settings.get("host"))
-        self.host_entry.pack(pady=5)
+        self.host_entry.grid(row=1, column=1, padx=1, pady=5)
 
-        self.port_entry = tk.Entry(self)
+        tk.Label(form_frame, text="Port:").grid(row=2, column=0, pady=5, sticky=tk.E)
+        self.port_entry = tk.Entry(form_frame)
         self.port_entry.insert(0, settings.get("port"))
-        self.port_entry.pack(pady=5)
+        self.port_entry.grid(row=2, column=1, padx=1, pady=5)
 
-        self.username_entry = tk.Entry(self)
-        self.username_entry.pack(pady=5)
+        tk.Label(form_frame, text="Username:").grid(row=3, column=0, pady=5, sticky=tk.E)
+        self.username_entry = tk.Entry(form_frame)
+        self.username_entry.grid(row=3, column=1, padx=1, pady=5)
 
-        self.connect_button = tk.Button(self, text="Connect", command=self.connect, pady=10)
-        self.connect_button.pack()
+        self.connect_button = tk.Button(form_frame, text="Connect", command=self.connect, cursor="heart")
+        self.connect_button.grid(row=4, column=0, columnspan=2, pady=5)
 
-        self.progressbar = ttk.Progressbar(self, mode="indeterminate")
+        form_frame.grid(row=1, column=0)
 
     def connect(self, event=None) -> None:
         host = self.host_entry.get()
@@ -151,12 +173,12 @@ class ClientConfigureGUI(tk.Frame):
 
         # everything is ok
         self.connect_button["state"] = tk.DISABLED
-        self.progressbar.pack(padx=20, pady=20)
 
         # fake loading lol
         with TkWait(self, random.randint(50, 500)) as wait:
-            self.progressbar.start(10)
-        self.progressbar.pack_forget()
+            loading_window = LoadingWindow(self, "Trying to connect to server...")
+        loading_window.stop()
 
         # switch frame (freezes app because of client connect lol)
         self.master.switch_frame_to(ClientGUI, username=username, host=host, port=int(port))
+        loading_window.destroy()
