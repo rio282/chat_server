@@ -79,7 +79,7 @@ class ServerGUI(tk.Frame):
             self.stop_button["state"] = tk.DISABLED
             self.update_text_area("Server closed.")
         else:
-            showerror("Couldn't stop server.")
+            showerror("Server Error", "Couldn't stop server. Reason: Unknown")
 
 
 class ServerConfigureGUI(tk.Frame):

@@ -131,8 +131,9 @@ class Server:
             for sock in readable:
                 if sock == self.server_socket:
                     try:
-                        client_socket, addr = sock.accept()
-                        self.handle_new_client(client_socket, addr)
+                        if len(self.sockets) < self.max_clients:
+                            client_socket, addr = sock.accept()
+                            self.handle_new_client(client_socket, addr)
                     except OSError as e:
                         # WinError 10038: An operation was attempted on something that is not a socket
                         if e.errno == 10038:
@@ -217,6 +218,7 @@ class Server:
         client = self.lookup_client_by_peername(client_socket.getpeername())
         self.sockets.remove(client_socket)
         client_socket.close()
+
         if self.running:
             self.output.append(f"{client} left the server. ({len(self.sockets) - 1}/{self.max_clients})")
         else:
