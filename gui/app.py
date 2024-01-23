@@ -12,7 +12,7 @@ class App(tk.Tk):
 
     def switch_frame_to(self, frame_class, **frame_class_constructor_params):
         new_frame = frame_class(self, **frame_class_constructor_params)
-        if self._frame is not None:
+        if self._frame:
             self._frame.destroy()
 
         self._frame = new_frame

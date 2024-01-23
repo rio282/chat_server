@@ -36,14 +36,14 @@ class ClientGUI(tk.Frame):
 
     def create_gui(self) -> None:
         # create gui components
-        self.message_entry = tk.Entry(self.master, width=75)
+        self.message_entry = tk.Entry(self, width=75)
         self.message_entry.bind("<Return>", self.send_message)
-        self.send_button = tk.Button(self.master, text="Send Message", command=self.send_message)
+        self.send_button = tk.Button(self, text="Send Message", command=self.send_message)
 
-        self.choose_files_button = tk.Button(self.master, text="Choose file...", command=self.choose_file_by_browsing)
-        self.send_file_button = tk.Button(self.master, text="Send File", command=self.send_file)
+        self.choose_files_button = tk.Button(self, text="Choose file...", command=self.choose_file_by_browsing)
+        self.send_file_button = tk.Button(self, text="Send File", command=self.send_file)
 
-        self.disconnect_button = tk.Button(self.master, text="Disconnect", command=self.disconnect_and_close)
+        self.disconnect_button = tk.Button(self, text="Disconnect", command=self.disconnect_and_close)
 
         # padding
         self.message_entry.pack(pady=10)
@@ -58,12 +58,13 @@ class ClientGUI(tk.Frame):
 
     def send_message(self, event=None) -> None:
         message = self.message_entry.get().strip()
-        if message.lower() == "exit":
-            self.master.destroy()
-            return
-
         self.message_entry.delete(0, tk.END)
-        self.client.send_message(message)
+
+        try:
+            self.client.send_message(message)
+        except ConnectionAbortedError:
+            showinfo("Server Information", "Server closed.")
+            self.disconnect_and_close()
 
     def send_file(self) -> None:
         if not self.chosen_file:
@@ -85,7 +86,7 @@ class ClientGUI(tk.Frame):
 
     def disconnect_and_close(self) -> None:
         self.client.close()
-        self.master.destroy()
+        self.master.switch_frame_to(ClientConfigureGUI)
 
 
 class ClientConfigureGUI(tk.Frame):
@@ -125,7 +126,7 @@ class ClientConfigureGUI(tk.Frame):
         if username.lower() in self.reserved_usernames:
             showinfo(
                 "Error",
-                f"Invalid username {username}. Reserved usernames are: {', '.join(self.reserved_usernames)}"
+                f"Invalid username '{username}'. Reserved usernames are: {', '.join(self.reserved_usernames)}"
             )
             return
 

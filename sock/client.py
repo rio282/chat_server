@@ -32,10 +32,7 @@ class Client:
             sys.exit()
 
     def send_message(self, message) -> None:
-        try:
-            self.client_socket.sendall(message.encode(self.encoding_format))
-        except Exception as e:
-            print(f"Error sending message: {e}")
+        self.client_socket.sendall(message.encode(self.encoding_format))
 
     def receive_message(self) -> str | None:
         data = self.client_socket.recv(self.buffer_size)
@@ -77,17 +74,6 @@ class Client:
                     raise ConnectionRefusedError("Server refused file")
         except Exception as e:
             print(f"Error sending file: {e}")
-
-    def run_headless(self) -> None:
-        while True:
-            message = input("Enter message (type 'exit' to quit): ").strip()
-            if message.lower() == "exit":
-                break
-            elif message.lower().startswith("send_file "):
-                self.send_file(message.replace("send_file ", ""))
-            else:
-                self.send_message(message)
-        self.close()
 
     def close(self) -> None:
         self.client_socket.close()
