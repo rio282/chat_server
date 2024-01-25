@@ -176,9 +176,11 @@ class ClientConfigureGUI(tk.Frame):
 
         # fake loading lol
         with TkWait(self, random.randint(50, 500)) as wait:
-            loading_window = LoadingWindow(self, "Trying to connect to server...")
-        loading_window.stop()
+            a = Thread(target=LoadingWindow, args=[self, "Trying to connect to server..."])
+            a.start()
+            # loading_window = LoadingWindow(self, "Trying to connect to server...")
+        # loading_window.stop()
 
         # switch frame (freezes app because of client connect lol)
         self.master.switch_frame_to(ClientGUI, username=username, host=host, port=int(port))
-        loading_window.destroy()
+        # loading_window.destroy()

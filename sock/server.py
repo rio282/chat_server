@@ -4,10 +4,11 @@ import select
 from datetime import datetime
 
 from settings import load_settings
-from sock.utils import get_downloads_path
-from sock.headers import FILE as file_header
-from sock.headers import READY_FOR_FILE as server_ready_for_file
-from sock.headers import USERNAME as set_username
+from sock.utils import get_downloads_path, get_public_ipv4
+from sock.headers import FILE as h_INCOMING_FILE
+from sock.headers import READY_FOR_FILE as h_FILE_ACK
+from sock.headers import USERNAME as h_SET_USERNAME
+from sock.headers import CLIENT_DISCONNECT as h_CLIENT_DC
 
 
 def hash_peername(peername) -> hash:
@@ -29,6 +30,7 @@ class Server:
 
         # other
         self.output = []
+        self.public_ip = get_public_ipv4()
 
         # run
         self.running = False
@@ -93,7 +95,7 @@ class Server:
             remaining_bytes = file_size
 
             # inform client that we're ready for the file data
-            self.send_message(client_socket, server_ready_for_file)
+            self.send_message(client_socket, h_FILE_ACK)
 
             # download
             while remaining_bytes > 0:
@@ -125,6 +127,7 @@ class Server:
     def serve(self) -> None:
         self.running = True
         self.output.append(f"Server listening on {self.host}:{self.port} for {self.max_clients} clients")
+        self.output.append(f"Server publicly available @ {self.public_ip} on port {self.port}")
 
         while self.running:
             readable, _, _ = select.select(self.sockets, [], [])
@@ -147,7 +150,7 @@ class Server:
                         data = sock.recv(self.buffer_size)
                         username = self.lookup_client_by_peername(sock.getpeername())
                         if data:
-                            if data.startswith(file_header.encode(self.encoding_format)):
+                            if data.startswith(h_INCOMING_FILE.encode(self.encoding_format)):
                                 self.output.append(f"Received file header from {username}!")
 
                                 # retrieve file info
@@ -162,6 +165,8 @@ class Server:
 
                                 # handle transfer
                                 self.handle_file_transfer(sock, file_name, file_size)
+                            elif data.startswith(h_CLIENT_DC.encode(self.encoding_format)):
+                                self.handle_client_disconnect(client_socket)
                             else:
                                 message = data.decode(self.encoding_format)
                                 text = f"{username} says: {message}"
@@ -200,8 +205,8 @@ class Server:
     def handle_new_client(self, client_socket, addr) -> None:
         try:
             username = client_socket.recv(self.buffer_size).decode(self.encoding_format)
-            if set_username in username:
-                username = username.replace(set_username, "").lstrip()
+            if h_SET_USERNAME in username:
+                username = username.replace(h_SET_USERNAME, "").lstrip()
                 self._add_client(client_socket, addr, username)
                 self.broadcast_message(
                     f"Server: {username} connected to the server! ({len(self.sockets) - 1}/{self.max_clients})"
